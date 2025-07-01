@@ -1,9 +1,71 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { ref } from 'vue'
+
+const charactorId = ref('')
+
+const power = ref('')
+const intelligence = ref('')
+const faith = ref('')
+const vitality = ref('')
+const dexterity = ref('')
+const speed = ref('')
+const charm = ref('')
+const luck = ref('')
+
+const message = ref('')
+
+const fetchCharactorStatus = async () => {
+  // 反映ボタンクリックでmessageをクリア
+  message.value = ''
+
+  // PaaSにデプロイしたAPIエンドポイント
+  const backendApiUrl = '【バックエンドのURL】'
+
+  try {
+    const response = await fetch(backendApiUrl, {
+      method: 'POST', // POSTリクエスト送信
+      headers: {
+        'Content-Type': 'application/json',
+      },
+
+      body: JSON.stringify({ charactorId: charactorId.value }), // charactorIDをJSON形式で送信
+    })
+
+    // レスポンスがOKでなければエラーを投げる
+    if (!response.ok) {
+      throw new Error(`データ取得に失敗しちゃった！${response.status}`)
+    }
+
+    // レスポンスOKの場合は、JSONデータを受け取る
+    const data = await response.json()
+    console.log('データ取得できたよ！', data)
+
+    message.value = 'ステータス取得成功'
+
+    // 取得したデータを定数に反映
+    power.value = data.power
+    intelligence.value = data.intelligence
+    faith.value = data.faith
+    vitality.value = data.vitality
+    dexterity.value = data.dexterity
+    speed.value = data.speed
+    charm.value = data.charm
+    luck.value = data.luck
+  } catch (error) {
+    // エラーが投げられたらエラー表示
+    console.error(error)
+    message.value = '※ステータス取得できませんでした。キャラクターIDを確認してください。'
+  }
+}
+</script>
 <template>
   <h1>FFA+転職金額計算スクリプト</h1>
   <div class="flex">
     <div class="left">
-      <input type="text" placeholder="1.キャラIDを入力" /><button>反映</button>
+      <input type="text" placeholder="1.キャラIDを入力" v-model="charactorId" />
+      <button @click="fetchCharactorStatus">反映</button>
+
+      <p style="color: red" v-show="message">{{ message }}</p>
 
       <div class="status">
         <table>
