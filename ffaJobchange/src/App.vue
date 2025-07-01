@@ -1,4 +1,4 @@
-<script setup></script>
+<script setup lang="ts"></script>
 <template>
   <h1>FFA+転職金額計算スクリプト</h1>
   <div class="flex">
@@ -59,35 +59,35 @@
           <tbody>
             <tr>
               <th scope="row" class="b2">力</th>
-              <td><input class="b3" type="text" placeholder="2.ここに目標値を入力" /></td>
+              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
             </tr>
             <tr>
               <th scope="row" class="b2">知能</th>
-              <td><input class="b3" type="text" placeholder="2.ここに目標値を入力" /></td>
+              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
             </tr>
             <tr>
               <th scope="row" class="b2">信仰心</th>
-              <td><input class="b3" type="text" placeholder="2.ここに目標値を入力" /></td>
+              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
             </tr>
             <tr>
               <th scope="row" class="b2">生命力</th>
-              <td><input class="b3" type="text" placeholder="2.ここに目標値を入力" /></td>
+              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
             </tr>
             <tr>
               <th scope="row" class="b2">器用さ</th>
-              <td><input class="b3" type="text" placeholder="2.ここに目標値を入力" /></td>
+              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
             </tr>
             <tr>
               <th scope="row" class="b2">速さ</th>
-              <td><input class="b3" type="text" placeholder="2.ここに目標値を入力" /></td>
+              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
             </tr>
             <tr>
               <th scope="row" class="b2">魅力</th>
-              <td><input class="b3" type="text" placeholder="2.ここに目標値を入力" /></td>
+              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
             </tr>
             <tr>
               <th scope="row" class="b2">運</th>
-              <td><input class="b3" type="text" placeholder="2.ここに目標値を入力" /></td>
+              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
             </tr>
           </tbody>
         </table>
