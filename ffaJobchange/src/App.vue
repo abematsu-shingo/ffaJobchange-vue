@@ -1,73 +1,171 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
-const charactorId = ref('')
+// キャラクターIDの定数
+const characterId = ref('')
 
-const power = ref('')
-const intelligence = ref('')
-const faith = ref('')
-const vitality = ref('')
-const dexterity = ref('')
-const speed = ref('')
-const charm = ref('')
-const luck = ref('')
+interface CharacterStatus {
+  power: number | null
+  intelligence: number | null
+  faith: number | null
+  vitality: number | null
+  dexterity: number | null
+  speed: number | null
+  charm: number | null
+  luck: number | null
+}
 
+// 現在の各ステータス値
+const currentStatus = ref<CharacterStatus>({
+  power: null,
+  intelligence: null,
+  faith: null,
+  vitality: null,
+  dexterity: null,
+  speed: null,
+  charm: null,
+  luck: null,
+})
+
+// 目標の各ステータス値
+const targetStatus = ref<CharacterStatus>({
+  power: null,
+  intelligence: null,
+  faith: null,
+  vitality: null,
+  dexterity: null,
+  speed: null,
+  charm: null,
+  luck: null,
+})
+
+// カプセルなしの各ステータス値
+const uncpStatus = ref<CharacterStatus>({
+  power: null,
+  intelligence: null,
+  faith: null,
+  vitality: null,
+  dexterity: null,
+  speed: null,
+  charm: null,
+  luck: null,
+})
+
+// カプセル込みの各ステータス値
+const cpStatus = ref<CharacterStatus>({
+  power: null,
+  intelligence: null,
+  faith: null,
+  vitality: null,
+  dexterity: null,
+  speed: null,
+  charm: null,
+  luck: null,
+})
+
+// ユーザー向けメッセージの定数
 const message = ref('')
+// ロードの表示・非表示
+const isLoading = ref(false)
 
-const fetchCharactorStatus = async () => {
-  // 反映ボタンクリックでmessageをクリア
+// 「反映」ボタンクリック時
+const fetchCharacterStatus = async () => {
+  // messageをクリア
   message.value = ''
 
+  if (characterId.value === '') {
+    // ID未入力時
+    message.value = 'キャラクターIDを入力してください。'
+    return
+  } else if (isLoading) {
+    // ID入力時、読み込み開始
+    message.value = '読込中(10秒くらい待ってください。)'
+  }
+
   // PaaSにデプロイしたAPIエンドポイント
-  const backendApiUrl = '【バックエンドのURL】'
+  const backendApiUrl = 'https://ffajobchange-puppeteer.onrender.com/api/get-status'
 
   try {
+    // ロード画面表示
+    isLoading.value = true
+
     const response = await fetch(backendApiUrl, {
-      method: 'POST', // POSTリクエスト送信
+      // POSTリクエスト送信
+      method: 'POST',
+      // リクエストヘッダー：JSON形式を指定
       headers: {
         'Content-Type': 'application/json',
       },
-
-      body: JSON.stringify({ charactorId: charactorId.value }), // charactorIDをJSON形式で送信
+      // characterIDをJSON形式で送信
+      body: JSON.stringify({ characterId: characterId.value }),
     })
 
-    // レスポンスがOKでなければエラーを投げる
+    // レスポンスがOKではない場合エラーを投げる
     if (!response.ok) {
-      throw new Error(`データ取得に失敗しちゃった！${response.status}`)
+      // JSON形式で届いたエラー
+      const errorData = await response.json()
+      // ロード画面終了
+      isLoading.value = false
+      // バックエンドから受け取ったメッセージ　もしくは　データ取得に失敗しちゃった！
+      message.value = errorData.error || `データ取得に失敗しちゃった！${response.status}`
+      return
     }
 
-    // レスポンスOKの場合は、JSONデータを受け取る
+    // JSON形式で届いた現在値データ
     const data = await response.json()
     console.log('データ取得できたよ！', data)
 
-    message.value = 'ステータス取得成功'
+    // 取得した現在値データを定数に反映
+    currentStatus.value.power = data.power
+    currentStatus.value.intelligence = data.intelligence
+    currentStatus.value.faith = data.faith
+    currentStatus.value.vitality = data.vitality
+    currentStatus.value.dexterity = data.dexterity
+    currentStatus.value.speed = data.speed
+    currentStatus.value.charm = data.charm
+    currentStatus.value.luck = data.luck
 
-    // 取得したデータを定数に反映
-    power.value = data.power
-    intelligence.value = data.intelligence
-    faith.value = data.faith
-    vitality.value = data.vitality
-    dexterity.value = data.dexterity
-    speed.value = data.speed
-    charm.value = data.charm
-    luck.value = data.luck
+    // ロード画面終了
+    isLoading.value = false
+    message.value = 'ステータス反映しました。'
   } catch (error) {
     // エラーが投げられたらエラー表示
     console.error(error)
+    // ロード画面終了
+    isLoading.value = false
     message.value = '※ステータス取得できませんでした。キャラクターIDを確認してください。'
   }
 }
+
+// カプセルなしの合計値
+const uncpSum = computed(() => {
+  Object.values(uncpStatus.value)
+    .filter((v): v is number => typeof v === 'number' && v !== null)
+    .reduce((sum, v) => sum + v, 0)
+})
+// カプセル込みの合計値
+const cpSum = computed(() => {
+  Object.values(cpStatus.value)
+    .filter((v): v is number => typeof v === 'number' && v !== null)
+    .reduce((sum, v) => sum + v, 0)
+})
 </script>
 <template>
   <h1>FFA+転職金額計算スクリプト</h1>
   <div class="flex">
     <div class="left">
-      <input type="text" placeholder="1.キャラIDを入力" v-model="charactorId" />
-      <button @click="fetchCharactorStatus">反映</button>
+      <!-- キャラクターID入力フォーム -->
+      <input type="text" placeholder="1.キャラIDを入力" v-model="characterId" />
+      <button @click="fetchCharacterStatus">反映</button>
 
+      <!-- ユーザー向けメッセージがあれば表示 -->
       <p style="color: red" v-show="message">{{ message }}</p>
 
+      <!-- 開発向けメッセージ -->
+      <div>{{ targetStatus }}</div>
+
       <div class="status">
+        <!-- キャラクターステータスの現在値 -->
         <table>
           <thead>
             <tr>
@@ -77,41 +175,42 @@ const fetchCharactorStatus = async () => {
           <tbody>
             <tr>
               <th scope="row" class="b2">力</th>
-              <td>{{ power }}</td>
+              <td>{{ currentStatus.power }}</td>
             </tr>
             <tr>
               <th scope="row" class="b2">知能</th>
-              <td>{{ intelligence }}</td>
+              <td>{{ currentStatus.intelligence }}</td>
             </tr>
             <tr>
               <th scope="row" class="b2">信仰心</th>
-              <td>{{ faith }}</td>
+              <td>{{ currentStatus.faith }}</td>
             </tr>
             <tr>
               <th scope="row" class="b2">生命力</th>
-              <td>{{ vitality }}</td>
+              <td>{{ currentStatus.vitality }}</td>
             </tr>
             <tr>
               <th scope="row" class="b2">器用さ</th>
-              <td>{{ dexterity }}</td>
+              <td>{{ currentStatus.dexterity }}</td>
             </tr>
             <tr>
               <th scope="row" class="b2">速さ</th>
-              <td>{{ speed }}</td>
+              <td>{{ currentStatus.speed }}</td>
             </tr>
             <tr>
               <th scope="row" class="b2">魅力</th>
-              <td>{{ charm }}</td>
+              <td>{{ currentStatus.charm }}</td>
             </tr>
             <tr>
               <th scope="row" class="b2">運</th>
-              <td>{{ luck }}</td>
+              <td>{{ currentStatus.luck }}</td>
             </tr>
           </tbody>
         </table>
 
         <p>⇒</p>
 
+        <!-- キャラクターステータスの目標値 -->
         <table>
           <thead>
             <tr>
@@ -121,42 +220,101 @@ const fetchCharactorStatus = async () => {
           <tbody>
             <tr>
               <th scope="row" class="b2">力</th>
-              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
+              <td>
+                <input
+                  v-model="targetStatus.power"
+                  class="b3"
+                  type="text"
+                  placeholder="2.目標値を入力"
+                />
+              </td>
             </tr>
             <tr>
               <th scope="row" class="b2">知能</th>
-              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
+              <td>
+                <input
+                  v-model="targetStatus.intelligence"
+                  class="b3"
+                  type="text"
+                  placeholder="2.目標値を入力"
+                />
+              </td>
             </tr>
             <tr>
               <th scope="row" class="b2">信仰心</th>
-              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
+              <td>
+                <input
+                  v-model="targetStatus.faith"
+                  class="b3"
+                  type="text"
+                  placeholder="2.目標値を入力"
+                />
+              </td>
             </tr>
             <tr>
               <th scope="row" class="b2">生命力</th>
-              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
+              <td>
+                <input
+                  v-model="targetStatus.vitality"
+                  class="b3"
+                  type="text"
+                  placeholder="2.目標値を入力"
+                />
+              </td>
             </tr>
             <tr>
               <th scope="row" class="b2">器用さ</th>
-              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
+              <td>
+                <input
+                  v-model="targetStatus.dexterity"
+                  class="b3"
+                  type="text"
+                  placeholder="2.目標値を入力"
+                />
+              </td>
             </tr>
             <tr>
               <th scope="row" class="b2">速さ</th>
-              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
+              <td>
+                <input
+                  v-model="targetStatus.speed"
+                  class="b3"
+                  type="text"
+                  placeholder="2.目標値を入力"
+                />
+              </td>
             </tr>
             <tr>
               <th scope="row" class="b2">魅力</th>
-              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
+              <td>
+                <input
+                  v-model="targetStatus.charm"
+                  class="b3"
+                  type="text"
+                  placeholder="2.目標値を入力"
+                />
+              </td>
             </tr>
             <tr>
               <th scope="row" class="b2">運</th>
-              <td><input class="b3" type="text" placeholder="2.目標値を入力" /></td>
+              <td>
+                <input
+                  v-model="targetStatus.luck"
+                  class="b3"
+                  type="text"
+                  placeholder="2.目標値を入力"
+                />
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <!-- 転職金額計算ボタン -->
       <button>目標金額を計算する</button>
 
       <div class="flex">
+        <!-- 転職金額 -->
         <table class="last-table">
           <thead>
             <tr>
@@ -171,43 +329,43 @@ const fetchCharactorStatus = async () => {
             </tr>
             <tr>
               <th scope="row" class="b2">力</th>
-              <td class="b3">{{ uncpPower }}</td>
-              <td>{{ cpPower }}</td>
+              <td class="b3">{{ uncpStatus.power }}</td>
+              <td>{{ cpStatus.power }}</td>
             </tr>
             <tr>
               <th scope="row" class="b2">知能</th>
-              <td class="b3">{{ uncpIntelligence }}</td>
-              <td class="b3">{{ cpIntelligence }}</td>
+              <td class="b3">{{ uncpStatus.intelligence }}</td>
+              <td class="b3">{{ cpStatus.intelligence }}</td>
             </tr>
             <tr>
               <th scope="row" class="b2">信仰心</th>
-              <td class="b3">{{ uncpFaith }}</td>
-              <td class="b3">{{ cpFaith }}</td>
+              <td class="b3">{{ uncpStatus.faith }}</td>
+              <td class="b3">{{ cpStatus.faith }}</td>
             </tr>
             <tr>
               <th scope="row" class="b2">生命力</th>
-              <td class="b3">{{ uncpVitality }}</td>
-              <td class="b3">{{ cpVitality }}</td>
+              <td class="b3">{{ uncpStatus.vitality }}</td>
+              <td class="b3">{{ cpStatus.vitality }}</td>
             </tr>
             <tr>
               <th scope="row" class="b2">器用さ</th>
-              <td class="b3">{{ uncpDexterity }}</td>
-              <td class="b3">{{ cpDexterity }}</td>
+              <td class="b3">{{ uncpStatus.dexterity }}</td>
+              <td class="b3">{{ cpStatus.dexterity }}</td>
             </tr>
             <tr>
               <th scope="row" class="b2">速さ</th>
-              <td class="b3">{{ uncpSpeed }}</td>
-              <td class="b3">{{ cpSpeed }}</td>
+              <td class="b3">{{ uncpStatus.speed }}</td>
+              <td class="b3">{{ cpStatus.speed }}</td>
             </tr>
             <tr>
               <th scope="row" class="b2">魅力</th>
-              <td class="b3">{{ uncpCharm }}</td>
-              <td class="b3">{{ cpCharm }}</td>
+              <td class="b3">{{ uncpStatus.charm }}</td>
+              <td class="b3">{{ cpStatus.charm }}</td>
             </tr>
             <tr>
               <th scope="row" class="b2">運</th>
-              <td class="b3">{{ uncpLuck }}</td>
-              <td class="b3">{{ cpLuck }}</td>
+              <td class="b3">{{ uncpStatus.luck }}</td>
+              <td class="b3">{{ cpStatus.luck }}</td>
             </tr>
           </tbody>
           <tfoot>
@@ -222,6 +380,7 @@ const fetchCharactorStatus = async () => {
       </div>
     </div>
 
+    <!-- how to use -->
     <div class="right">
       <h2>
         転職金額計算スクリプト <span style="font-weight: lighter; font-size: 15px">v2.0.0</span>
@@ -241,7 +400,10 @@ const fetchCharactorStatus = async () => {
       <h3>使い方</h3>
       <p>ID入力したら現在値に反映されるようにしました。不明点あれば教えて下さい。</p>
       <ol>
-        <li><b>「1」へキャラIDを入力</b><br /><br /></li>
+        <li>
+          <b>「1」へキャラIDを入力して、「反映」ボタンをクリック</b><br />
+          ※10秒経って反映されない場合は、サーバースリープ中の為、2〜3分待ってください。<br /><br />
+        </li>
         <li>
           <b>「2」へ転職後の目標値を入力して、「目標金額を計算する」ボタンをクリック。</b>
           <br /><br />
