@@ -63,6 +63,11 @@ const cpStatus = ref<CharacterStatus>({
   luck: null,
 })
 
+let uncpSum = ref<number | null>(null)
+let cpSum = ref<number | null>(null)
+const newUncpSum = ref<string>('')
+const newCpSum = ref<string>('')
+
 // ユーザー向けメッセージの定数
 const message = ref('')
 // ロードの表示・非表示
@@ -116,14 +121,12 @@ const fetchCharacterStatus = async () => {
     console.log('データ取得できたよ！', data)
 
     // 取得した現在値データを定数に反映
-    currentStatus.value.power = data.power
-    currentStatus.value.intelligence = data.intelligence
-    currentStatus.value.faith = data.faith
-    currentStatus.value.vitality = data.vitality
-    currentStatus.value.dexterity = data.dexterity
-    currentStatus.value.speed = data.speed
-    currentStatus.value.charm = data.charm
-    currentStatus.value.luck = data.luck
+    // 構文Object.keys(obj)で、
+    Object.keys(currentStatus.value).forEach((key) => {
+      // keyを、interfaceで定義した<CharacterStatus>で型定義
+      const k = key as keyof CharacterStatus
+      currentStatus.value[k] = data[k]
+    })
 
     // ロード画面終了
     isLoading.value = false
@@ -137,18 +140,49 @@ const fetchCharacterStatus = async () => {
   }
 }
 
-// カプセルなしの合計値
-const uncpSum = computed(() => {
-  Object.values(uncpStatus.value)
-    .filter((v): v is number => typeof v === 'number' && v !== null)
-    .reduce((sum, v) => sum + v, 0)
-})
-// カプセル込みの合計値
-const cpSum = computed(() => {
-  Object.values(cpStatus.value)
-    .filter((v): v is number => typeof v === 'number' && v !== null)
-    .reduce((sum, v) => sum + v, 0)
-})
+const calcStatus = () => {
+  // カプセルなしで、目標値×50000
+  Object.keys(uncpStatus.value).forEach((key) => {
+    const k = key as keyof CharacterStatus
+    // Null合体演算子(??)：目標値がnullや空文字の場合0を返す。
+    uncpStatus.value[k] = (targetStatus.value[k] ?? 0) * 50000
+  })
+
+  // カプセルなしの合計値
+  uncpSum.value = Object.keys(uncpStatus.value).reduce((sum, key) => {
+    const k = key as keyof CharacterStatus
+    return sum + (uncpStatus.value[k] ?? 0)
+  }, 0)
+
+  newUncpSum.value = uncpSum.value.toLocaleString('ja-JP')
+
+  // カプセル込みで、目標値×50000
+  Object.keys(cpStatus.value).forEach((key) => {
+    const k = key as keyof CharacterStatus
+    const currentK = currentStatus.value[k] ?? 0
+    const targetK = targetStatus.value[k] ?? 0
+    const formula = ((Math.floor(currentK / 10) - 1) * 10) / 2
+    // Null合体演算子(??)：目標値がnullや空文字の場合0を返す。
+    if (currentK < 10) {
+      // ステータス値が10より低い場合、計算がマイナスになるため、目標値×50000
+      cpStatus.value[k] = targetK * 50000
+    } else if (targetK < formula || targetStatus.value[k] === 0) {
+      // 同系統へ変換後のカプセルが目標値より高い、もしくは目標値が0の場合、貯金額0
+      cpStatus.value[k] = 0
+    } else {
+      // 変換後のカプセルが目標値より低い場合、((目標値)-(カプセル))×50000
+      cpStatus.value[k] = (targetK - formula) * 50000
+    }
+  })
+
+  // カプセル込みの合計値
+  cpSum.value = Object.keys(cpStatus.value).reduce((sum, key) => {
+    const k = key as keyof CharacterStatus
+    return sum + (cpStatus.value[k] ?? 0)
+  }, 0)
+
+  newCpSum.value = cpSum.value.toLocaleString('ja-JP')
+}
 </script>
 <template>
   <h1>FFA+転職金額計算スクリプト</h1>
@@ -160,9 +194,6 @@ const cpSum = computed(() => {
 
       <!-- ユーザー向けメッセージがあれば表示 -->
       <p style="color: red" v-show="message">{{ message }}</p>
-
-      <!-- 開発向けメッセージ -->
-      <div>{{ targetStatus }}</div>
 
       <div class="status">
         <!-- キャラクターステータスの現在値 -->
@@ -311,7 +342,7 @@ const cpSum = computed(() => {
       </div>
 
       <!-- 転職金額計算ボタン -->
-      <button>目標金額を計算する</button>
+      <button @click="calcStatus">目標金額を計算する</button>
 
       <div class="flex">
         <!-- 転職金額 -->
@@ -371,8 +402,8 @@ const cpSum = computed(() => {
           <tfoot>
             <tr>
               <th class="b4">合計</th>
-              <td class="b3 bold">{{ uncpSum }}</td>
-              <td class="b3 bold">{{ cpSum }}</td>
+              <td class="b3 bold">{{ newUncpSum }}</td>
+              <td class="b3 bold">{{ newCpSum }}</td>
             </tr>
           </tfoot>
         </table>
@@ -402,7 +433,7 @@ const cpSum = computed(() => {
       <ol>
         <li>
           <b>「1」へキャラIDを入力して、「反映」ボタンをクリック</b><br />
-          ※10秒経って反映されない場合は、サーバースリープ中の為、2〜3分待ってください。<br /><br />
+          ※10秒経って反映されない場合は、サーバースリープ中の為、1〜2分待ってください。<br /><br />
         </li>
         <li>
           <b>「2」へ転職後の目標値を入力して、「目標金額を計算する」ボタンをクリック。</b>
