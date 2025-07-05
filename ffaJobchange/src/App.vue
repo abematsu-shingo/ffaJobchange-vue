@@ -183,7 +183,13 @@ const calcStatus = () => {
 
   newCpSum.value = cpSum.value.toLocaleString('ja-JP')
 }
+
+// ResetButton
+const resetButton = () => {
+  window.location.reload()
+}
 </script>
+
 <template>
   <h1>FFA+転職金額計算スクリプト</h1>
   <div class="flex">
@@ -407,8 +413,8 @@ const calcStatus = () => {
             </tr>
           </tfoot>
         </table>
-        <button class="reset"><a onclick="window.location.reload(true);">リセットする</a></button>
       </div>
+      <button @click="resetButton" class="reset">リセットする</button>
     </div>
 
     <!-- how to use -->
@@ -464,6 +470,7 @@ const calcStatus = () => {
     </div>
   </div>
 </template>
+
 <style scoped>
 h2,
 h3 {
@@ -529,16 +536,6 @@ a {
 a:hover {
   color: #5093ff;
 }
-.reset {
-  margin: auto 0 0 0;
-}
-.reset a {
-  text-decoration: none;
-  color: #364047;
-}
-.reset a:hover {
-  cursor: default;
-}
 .status {
   display: flex;
   width: 55vw;
@@ -560,10 +557,6 @@ a:hover {
 }
 
 @media screen and (max-width: 480px) {
-  #src {
-    width: 99vw;
-    height: 20px;
-  }
   .b1 {
     width: 99vw;
   }
