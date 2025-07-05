@@ -63,8 +63,10 @@ const cpStatus = ref<CharacterStatus>({
   luck: null,
 })
 
+// 各合計金額の定数
 let uncpSum = ref<number | null>(null)
 let cpSum = ref<number | null>(null)
+// toLocaleString('ja-JP')使用のためstring型として定義
 const newUncpSum = ref<string>('')
 const newCpSum = ref<string>('')
 
