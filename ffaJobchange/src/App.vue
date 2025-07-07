@@ -76,7 +76,6 @@ const message = ref('')
 const isLoading = ref(false)
 // カウントダウンタイマーの表示・非表示
 const showCountdownTimer = ref(false)
-const apiData = ref()
 
 // 10秒のカウントダウン計算用定数
 const count = ref<number>(0)
@@ -86,6 +85,9 @@ let timer: ReturnType<typeof setInterval> | null = null
 // カウントが0になったらonFinish(ステータス反映)を実行する
 const startCountDown = (sec: number) => {
   return new Promise<void>((onFinish) => {
+    // 前回のタイマーを止める処理
+    clearInterval(timer!)
+
     // countに10秒を代入
     count.value = sec
     // setInterval:一定時間ごとに処理を実行する
@@ -94,14 +96,14 @@ const startCountDown = (sec: number) => {
         // countが1以上だったらカウントダウン
         count.value--
       } else {
-        // countが0になったらonFinish
-        timer = null
-        // showCountdownTimer.value = false
         if (count.value === 1 && message.value !== 'ステータス反映しました。') {
           // 10秒経っても反映されない場合は90秒のカウントダウン開始
           count.value = 90
-          message.value = 'サーバーがスリープ中でした...反映まで、たぶん'
+          message.value = 'サーバーがスリープ中かも...反映まで、たぶん'
         }
+        // カウントが0になったらタイマーを止める処理
+        clearInterval(timer!)
+        // countが0になったらonFinish
         onFinish()
       }
 
@@ -159,7 +161,6 @@ const fetchCharacterStatus = async () => {
       startCountDown(10),
     ])
 
-    apiData.value = 'data'
     console.log('データ取得できたよ！', data)
 
     // 取得した現在値データを、構文Object.keys(obj)でオブジェクトの中身を繰り返し処理定数に反映
