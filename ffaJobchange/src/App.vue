@@ -236,6 +236,9 @@ const resetButton = () => {
 
 <template>
   <h1>FFA+転職金額計算スクリプト</h1>
+  <nav>
+    <a href="#howto">使い方</a>
+  </nav>
   <div class="flex">
     <div class="left">
       <!-- キャラクターID入力フォーム -->
@@ -465,7 +468,7 @@ const resetButton = () => {
     </div>
 
     <!-- how to use -->
-    <div class="right">
+    <div id="howto" class="right">
       <h2>
         転職金額計算スクリプト <span style="font-weight: lighter; font-size: 15px">v2.0.0</span>
       </h2>
@@ -495,7 +498,16 @@ const resetButton = () => {
       <hr />
 
       <h3>使い方</h3>
-      <p>ID入力したら現在値に反映されるようにしました。不明点あれば教えて下さい。</p>
+      <p>
+        ID入力したら現在値に反映されるようにしました。不明点あれば教えて下さい。
+        <br />もし利用できない場合は
+        <a
+          href="http://essea-numero2.com/FFA_jobChange.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          >旧ver</a
+        >をご利用ください
+      </p>
       <ol>
         <li>
           <b>「1」へキャラIDを入力して、「反映」ボタンをクリック</b><br />
@@ -526,6 +538,9 @@ const resetButton = () => {
 </template>
 
 <style scoped>
+nav {
+  display: none;
+}
 h2,
 h3 {
   margin-bottom: 0;
@@ -614,27 +629,38 @@ li {
 }
 
 @media screen and (max-width: 480px) {
+  h1 {
+    font-size: 25px;
+    margin-bottom: 0;
+  }
+  nav {
+    display: block;
+    margin-bottom: 10px;
+  }
   .b1 {
-    width: 99vw;
+    width: 95vw;
   }
   .b2 {
     width: 15vw;
   }
   .b3 {
-    width: 79vw;
+    width: 80vw;
+  }
+  .flex {
+    display: block;
   }
   .status {
-    width: 99vw;
+    width: 95vw;
     display: block;
   }
   .status p {
     display: none;
   }
   .left {
-    width: 99vw;
+    width: 95vw;
   }
   .right {
-    display: none;
+    width: 85vw;
   }
   .last-table .b3 {
     width: 40vw;
