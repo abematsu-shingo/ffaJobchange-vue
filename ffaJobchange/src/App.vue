@@ -76,6 +76,8 @@ const message = ref('')
 const isLoading = ref(false)
 // カウントダウンタイマーの表示・非表示
 const showCountdownTimer = ref(false)
+// 反映ボタンの有効化
+const isPush = ref(false)
 
 // 10秒のカウントダウン計算用定数
 const count = ref<number>(0)
@@ -101,8 +103,6 @@ const startCountDown = (sec: number) => {
           count.value = 90
           message.value = 'サーバーがスリープ中かも...反映まで、たぶん'
         }
-        // カウントが0になったらタイマーを止める処理
-        clearInterval(timer!)
         // countが0になったらonFinish
         onFinish()
       }
@@ -116,6 +116,7 @@ const startCountDown = (sec: number) => {
 const fetchCharacterStatus = async () => {
   // messageをクリア
   message.value = ''
+  isPush.value = true
 
   if (characterId.value === '') {
     // ID未入力時
@@ -170,6 +171,7 @@ const fetchCharacterStatus = async () => {
       currentStatus.value[k] = data[k]
     })
     message.value = 'ステータス反映しました。'
+    isPush.value = false
   } catch (error: any) {
     // エラーが投げられたらエラー表示
     console.error(error)
@@ -238,7 +240,7 @@ const resetButton = () => {
     <div class="left">
       <!-- キャラクターID入力フォーム -->
       <input type="text" placeholder="1.キャラIDを入力" v-model="characterId" />
-      <button @click="fetchCharacterStatus">反映</button>
+      <button @click="fetchCharacterStatus" :disabled="isPush">反映</button>
 
       <!-- ユーザー向けメッセージがあれば表示 -->
       <p style="color: red" v-show="message">
@@ -476,15 +478,31 @@ const resetButton = () => {
         >内、
         <a href="http://www.game-can.com/ffa/others.cgi" target="blank" rel="noopener noreferrer"
           >FF Adventure+</a
-        >の転職金額計算WEBアプリです。<br />
-        以前同志が作って下さっていた計算スクリプトはサーバー切れ？っぽいので新しく作りました。
+        >の転職金額計算WEBアプリです。
       </p>
+      <p>
+        ある程度確認済みですが、バグとか計算ミスとかあるかもしれません。<br />
+        皆さんで使ってみて何か気付いたことやご要望があれば
+        <a
+          href="http://s2.game-can.com:8080/ffa/kairan.cgi?mode=login&id=matutake"
+          target="blank"
+          rel="noopener noreferrer"
+          >matutake</a
+        >
+        の個メまでご連絡ください。
+      </p>
+
+      <hr />
+
       <h3>使い方</h3>
       <p>ID入力したら現在値に反映されるようにしました。不明点あれば教えて下さい。</p>
       <ol>
         <li>
           <b>「1」へキャラIDを入力して、「反映」ボタンをクリック</b><br />
-          ※10秒経って反映されない場合は、サーバースリープ中の為、1〜2分待ってください。<br /><br />
+          <span style="color: red"
+            >反映を押してから10秒経っても反映しない場合は、たぶん「サーバースリープ中」です。そのまま1〜2分待ってください。</span
+          >
+          <br /><br />
         </li>
         <li>
           <b>「2」へ転職後の目標値を入力して、「目標金額を計算する」ボタンをクリック。</b>
@@ -498,18 +516,9 @@ const resetButton = () => {
         <li>ステータスは、1ポイント50000ギルで計算。</li>
         <li>カプセル変換なしは、転職中のカプセル使用後に計算すると便利。</li>
         <li>合計金額のみ3桁区切りで表示。</li>
+        <li>現在のステータスが1桁台のときに金額がマイナスになる現象を改善。</li>
         <li>
-          9000兆ギル以上は指数表記（0.00e+00みたいな表示）になります。9000兆ギル以上貯金したい超上級者の方はごめんなさい。要望があれば改善します。
-        </li>
-        <li>
-          ある程度確認済みですが、バグとか計算ミスとかあるかもしれません。皆さんで使ってみて何か気付いたことやご要望があれば
-          <a
-            href="http://s2.game-can.com:8080/ffa/kairan.cgi?mode=login&id=matutake"
-            target="blank"
-            rel="noopener noreferrer"
-            >matutake</a
-          >
-          の個メまでご連絡ください。
+          最後のアクセスから15分経過するとサーバースリープ状態となります。matutakeがサーバー代を支払うとスリープしなくなります。乞うご期待。
         </li>
       </ul>
     </div>
@@ -580,6 +589,9 @@ a {
 }
 a:hover {
   color: #5093ff;
+}
+li {
+  margin-bottom: 5px;
 }
 .status {
   display: flex;
