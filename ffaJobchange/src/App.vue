@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 // キャラクターIDの定数
 const characterId = ref('')
@@ -74,6 +74,41 @@ const newCpSum = ref<string>('')
 const message = ref('')
 // ロードの表示・非表示
 const isLoading = ref(false)
+// カウントダウンタイマーの表示・非表示
+const showCountdownTimer = ref(false)
+const apiData = ref()
+
+// 10秒のカウントダウン計算用定数
+const count = ref<number>(0)
+// カウントダウンタイマー(setInterval)の変数
+let timer: ReturnType<typeof setInterval> | null = null
+
+// カウントが0になったらonFinish(ステータス反映)を実行する
+const startCountDown = (sec: number) => {
+  return new Promise<void>((onFinish) => {
+    // countに10秒を代入
+    count.value = sec
+    // setInterval:一定時間ごとに処理を実行する
+    timer = setInterval(() => {
+      if (count.value > 1) {
+        // countが1以上だったらカウントダウン
+        count.value--
+      } else {
+        // countが0になったらonFinish
+        timer = null
+        // showCountdownTimer.value = false
+        if (count.value === 1 && message.value !== 'ステータス反映しました。') {
+          // 10秒経っても反映されない場合は90秒のカウントダウン開始
+          count.value = 90
+          message.value = 'サーバーがスリープ中でした...反映まで、たぶん'
+        }
+        onFinish()
+      }
+
+      // 1000m/秒(1秒)毎にカウントダウン
+    }, 1000)
+  })
+}
 
 // 「反映」ボタンクリック時
 const fetchCharacterStatus = async () => {
@@ -84,61 +119,65 @@ const fetchCharacterStatus = async () => {
     // ID未入力時
     message.value = 'キャラクターIDを入力してください。'
     return
-  } else if (isLoading) {
-    // ID入力時、読み込み開始
-    message.value = '読込中(10秒くらい待ってください。)'
   }
+  // ID入力時、読み込み開始
+  message.value = '反映まで、たぶん'
+  // ローディング画面・カウントダウンタイマー表示
+  isLoading.value = true
+  showCountdownTimer.value = true
 
   // PaaSにデプロイしたAPIエンドポイント
   const backendApiUrl = 'https://ffajobchange-puppeteer.onrender.com/api/get-status'
 
   try {
-    // ロード画面表示
-    isLoading.value = true
+    // Promise.all内の処理がすべて完了したらdataに格納
+    const [data] = await Promise.all([
+      (async () => {
+        const response = await fetch(backendApiUrl, {
+          // POSTリクエスト送信
+          method: 'POST',
+          // リクエストヘッダー：JSON形式を指定
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          // characterIDをJSON形式で送信
+          body: JSON.stringify({ characterId: characterId.value }),
+        })
 
-    const response = await fetch(backendApiUrl, {
-      // POSTリクエスト送信
-      method: 'POST',
-      // リクエストヘッダー：JSON形式を指定
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // characterIDをJSON形式で送信
-      body: JSON.stringify({ characterId: characterId.value }),
-    })
+        // レスポンスがOKではない場合エラーを投げる
+        if (!response.ok) {
+          // JSON形式で届いたエラー
+          const errorData = await response.json()
+          throw new Error(
+            // バックエンドから受け取ったメッセージ　もしくは　データ取得に失敗しちゃった！
+            errorData.error || `データ取得に失敗しちゃった！${response.status}`,
+          )
+        }
+        return response.json()
+      })(),
+      // カウントダウンタイマーを実行する
+      startCountDown(10),
+    ])
 
-    // レスポンスがOKではない場合エラーを投げる
-    if (!response.ok) {
-      // JSON形式で届いたエラー
-      const errorData = await response.json()
-      // ロード画面終了
-      isLoading.value = false
-      // バックエンドから受け取ったメッセージ　もしくは　データ取得に失敗しちゃった！
-      message.value = errorData.error || `データ取得に失敗しちゃった！${response.status}`
-      return
-    }
-
-    // JSON形式で届いた現在値データ
-    const data = await response.json()
+    apiData.value = 'data'
     console.log('データ取得できたよ！', data)
 
-    // 取得した現在値データを定数に反映
-    // 構文Object.keys(obj)で、
+    // 取得した現在値データを、構文Object.keys(obj)でオブジェクトの中身を繰り返し処理定数に反映
     Object.keys(currentStatus.value).forEach((key) => {
       // keyを、interfaceで定義した<CharacterStatus>で型定義
       const k = key as keyof CharacterStatus
       currentStatus.value[k] = data[k]
     })
-
-    // ロード画面終了
-    isLoading.value = false
     message.value = 'ステータス反映しました。'
-  } catch (error) {
+  } catch (error: any) {
     // エラーが投げられたらエラー表示
     console.error(error)
+    message.value =
+      error.message || '※ステータス取得できませんでした。キャラクターIDを確認してください。'
+  } finally {
     // ロード画面終了
     isLoading.value = false
-    message.value = '※ステータス取得できませんでした。キャラクターIDを確認してください。'
+    showCountdownTimer.value = false
   }
 }
 
@@ -201,7 +240,10 @@ const resetButton = () => {
       <button @click="fetchCharacterStatus">反映</button>
 
       <!-- ユーザー向けメッセージがあれば表示 -->
-      <p style="color: red" v-show="message">{{ message }}</p>
+      <p style="color: red" v-show="message">
+        {{ message }}
+        <input type="text" size="2" v-if="showCountdownTimer" :value="count" disabled />
+      </p>
 
       <div class="status">
         <!-- キャラクターステータスの現在値 -->
