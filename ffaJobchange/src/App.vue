@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { ref } from 'vue'
 
 // キャラクターIDの定数
 const characterId = ref('')
