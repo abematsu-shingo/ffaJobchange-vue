@@ -98,7 +98,7 @@ const startCountDown = (sec: number) => {
         // countが1以上だったらカウントダウン
         count.value--
       } else {
-        if (count.value === 1 && message.value !== 'ステータス反映しました。') {
+        if (count.value === 1 && message.value === '反映まで、たぶん') {
           // 10秒経っても反映されない場合は90秒のカウントダウン開始
           count.value = 90
           message.value = 'サーバーがスリープ中かも...反映まで、たぶん'
@@ -121,6 +121,15 @@ const fetchCharacterStatus = async () => {
   if (characterId.value === '') {
     // ID未入力時
     message.value = 'キャラクターIDを入力してください。'
+    isPush.value = false
+    return
+  } else if (/^.*[^ -~｡-ﾟ].*$/.test(characterId.value)) {
+    message.value = 'キャラクターIDは半角英数字で入力してください。'
+    isPush.value = false
+    return
+  } else if (!/^\w{4,8}$/.test(characterId.value)) {
+    message.value = 'キャラクターIDは4文字以上、8文字以内で入力してください。'
+    isPush.value = false
     return
   }
   // ID入力時、読み込み開始
@@ -174,13 +183,19 @@ const fetchCharacterStatus = async () => {
     isPush.value = false
   } catch (error: any) {
     // エラーが投げられたらエラー表示
-    console.error(error)
-    message.value =
-      error.message || '※ステータス取得できませんでした。キャラクターIDを確認してください。'
+    console.log(`データ取得に失敗しちゃった！${error}`)
+    if (error.message === 'Failed to fetch') {
+      // サーバーに接続できなかった場合
+      message.value = 'サーバーに接続できませんでした。管理者に問い合わせてください。'
+    } else {
+      message.value =
+        error.message || '※ステータス取得できませんでした。キャラクターIDを確認してください。'
+    }
   } finally {
     // ロード画面終了
     isLoading.value = false
     showCountdownTimer.value = false
+    isPush.value = false
   }
 }
 
@@ -470,7 +485,7 @@ const resetButton = () => {
     <!-- how to use -->
     <div id="howto" class="right">
       <h2>
-        転職金額計算スクリプト <span style="font-weight: lighter; font-size: 15px">v2.0.0</span>
+        転職金額計算スクリプト <span style="font-weight: lighter; font-size: 15px">v2.0.1</span>
       </h2>
       <p>
         無料WEBゲームサイト<a
