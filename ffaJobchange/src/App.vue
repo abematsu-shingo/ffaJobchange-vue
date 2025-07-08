@@ -485,7 +485,7 @@ const resetButton = () => {
     <!-- how to use -->
     <div id="howto" class="right">
       <h2>
-        転職金額計算スクリプト <span style="font-weight: lighter; font-size: 15px">v2.0.0</span>
+        転職金額計算スクリプト <span style="font-weight: lighter; font-size: 15px">v2.0.1</span>
       </h2>
       <p>
         無料WEBゲームサイト<a
