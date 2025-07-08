@@ -127,8 +127,8 @@ const fetchCharacterStatus = async () => {
     message.value = 'キャラクターIDは半角英数字で入力してください。'
     isPush.value = false
     return
-  } else if (!/^\w{4,8}$/.test(characterId.value)) {
-    message.value = 'キャラクターIDは4文字以上、8文字以内で入力してください。'
+  } else if (!/^[a-zA-Z0-9]{4,8}$/.test(characterId.value)) {
+    message.value = 'キャラクターIDは半角英数字4〜8文字で入力してください。'
     isPush.value = false
     return
   }
@@ -485,7 +485,7 @@ const resetButton = () => {
     <!-- how to use -->
     <div id="howto" class="right">
       <h2>
-        転職金額計算スクリプト <span style="font-weight: lighter; font-size: 15px">v2.0.1</span>
+        転職金額計算スクリプト <span style="font-weight: lighter; font-size: 15px">v2.0.2</span>
       </h2>
       <p>
         無料WEBゲームサイト<a
