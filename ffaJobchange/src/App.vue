@@ -4,94 +4,52 @@ import { ref } from 'vue'
 // キャラクターIDの定数
 const characterId = ref('')
 
+// 各ステータスの型定義
 interface CharacterStatus {
-  power: number | null
-  intelligence: number | null
-  faith: number | null
-  vitality: number | null
-  dexterity: number | null
-  speed: number | null
-  charm: number | null
-  luck: number | null
+  id: string
+  name: string
+  value: number | null
 }
 
-// 現在の各ステータス値
-const currentStatus = ref<CharacterStatus>({
-  power: null,
-  intelligence: null,
-  faith: null,
-  vitality: null,
-  dexterity: null,
-  speed: null,
-  charm: null,
-  luck: null,
-})
+// 各ステータス値オブジェクト配列
+const createCharacterStatusRef = () => {
+  return ref<CharacterStatus[]>([
+    { id: 'power', name: '力', value: null },
+    { id: 'intelligence', name: '知能', value: null },
+    { id: 'faith', name: '信仰心', value: null },
+    { id: 'vitality', name: '生命力', value: null },
+    { id: 'dexterity', name: '器用さ', value: null },
+    { id: 'speed', name: '速さ', value: null },
+    { id: 'charm', name: '魅力', value: null },
+    { id: 'luck', name: '運', value: null },
+  ])
+}
 
-// 目標の各ステータス値
-const targetStatus = ref<CharacterStatus>({
-  power: null,
-  intelligence: null,
-  faith: null,
-  vitality: null,
-  dexterity: null,
-  speed: null,
-  charm: null,
-  luck: null,
-})
+const currentStatuses = createCharacterStatusRef() // 現在の各ステータス値
+const targetStatuses = createCharacterStatusRef() // 目標の各ステータス値
+const uncpStatuses = createCharacterStatusRef() // カプセルなしの各ステータス値
+const cpStatuses = createCharacterStatusRef() // カプセル込みの各ステータス値
 
-// カプセルなしの各ステータス値
-const uncpStatus = ref<CharacterStatus>({
-  power: null,
-  intelligence: null,
-  faith: null,
-  vitality: null,
-  dexterity: null,
-  speed: null,
-  charm: null,
-  luck: null,
-})
+let uncpSum = ref<number | null>(null) // カプセルなしの合計値
+const newUncpSum = ref<string>('') // toLocaleString
+let cpSum = ref<number | null>(null) // カプセル込みの合計値
+const newCpSum = ref<string>('') // toLocaleString
 
-// カプセル込みの各ステータス値
-const cpStatus = ref<CharacterStatus>({
-  power: null,
-  intelligence: null,
-  faith: null,
-  vitality: null,
-  dexterity: null,
-  speed: null,
-  charm: null,
-  luck: null,
-})
+const message = ref('') // ユーザー向けメッセージの定数
 
-// 各合計金額の定数
-let uncpSum = ref<number | null>(null)
-let cpSum = ref<number | null>(null)
-// toLocaleString('ja-JP')使用のためstring型として定義
-const newUncpSum = ref<string>('')
-const newCpSum = ref<string>('')
+const isLoading = ref(false) // ロードの表示・非表示
+const isPush = ref(false) // 反映ボタンの有効化
 
-// ユーザー向けメッセージの定数
-const message = ref('')
-// ロードの表示・非表示
-const isLoading = ref(false)
-// カウントダウンタイマーの表示・非表示
-const showCountdownTimer = ref(false)
-// 反映ボタンの有効化
-const isPush = ref(false)
-
-// 10秒のカウントダウン計算用定数
-const count = ref<number>(0)
-// カウントダウンタイマー(setInterval)の変数
-let timer: ReturnType<typeof setInterval> | null = null
+const count = ref<number>(0) // 10秒のカウントダウン計算用定数
+let timer: ReturnType<typeof setInterval> | null = null // カウントダウンタイマー(setInterval)の変数
+const showCountdownTimer = ref(false) // カウントダウンタイマーの表示・非表示
 
 // カウントが0になったらonFinish(ステータス反映)を実行する
 const startCountDown = (sec: number) => {
   return new Promise<void>((onFinish) => {
-    // 前回のタイマーを止める処理
-    clearInterval(timer!)
+    clearInterval(timer!) // 前回のタイマーを止める処理
+    count.value = sec // countに10秒を代入
 
-    // countに10秒を代入
-    count.value = sec
     // setInterval:一定時間ごとに処理を実行する
     timer = setInterval(() => {
       if (count.value > 1) {
@@ -103,43 +61,41 @@ const startCountDown = (sec: number) => {
           count.value = 90
           message.value = 'サーバーがスリープ中かも...反映まで、たぶん'
         }
-        // countが0になったらonFinish
-        onFinish()
+        onFinish() // countが0になったらonFinish
       }
-
-      // 1000m/秒(1秒)毎にカウントダウン
-    }, 1000)
+    }, 1000) // 1000m/秒(1秒)毎にカウントダウン
   })
 }
 
 // 「反映」ボタンクリック時
 const fetchCharacterStatus = async () => {
-  // messageをクリア
-  message.value = ''
-  isPush.value = true
+  message.value = '' // messageをクリア
+  isPush.value = true // 反映ボタン無効化
 
+  // バリデーション
   if (characterId.value === '') {
     // ID未入力時
     message.value = 'キャラクターIDを入力してください。'
     isPush.value = false
     return
   } else if (/^.*[^ -~｡-ﾟ].*$/.test(characterId.value)) {
+    // ユーザーの入力値に全角が含まれていた場合
     message.value = 'キャラクターIDは半角英数字で入力してください。'
     isPush.value = false
     return
   } else if (!/^[a-zA-Z0-9]{4,8}$/.test(characterId.value)) {
+    // 半角英数字以外の文字列　かつ　4〜8文字でない場合
     message.value = 'キャラクターIDは半角英数字4〜8文字で入力してください。'
     isPush.value = false
     return
   }
+
   // ID入力時、読み込み開始
   message.value = '反映まで、たぶん'
-  // ローディング画面・カウントダウンタイマー表示
-  isLoading.value = true
-  showCountdownTimer.value = true
+  isLoading.value = true // ローディング画面表示
+  showCountdownTimer.value = true // カウントダウンタイマー表示
 
-  // PaaSにデプロイしたAPIエンドポイント
-  const backendApiUrl = 'https://ffajobchange-puppeteer.onrender.com/api/get-status'
+  const backendApiUrl = 'https://ffajobchange-puppeteer.onrender.com/api/get-status' // PaaSにデプロイしたAPIエンドポイント
 
   try {
     // Promise.all内の処理がすべて完了したらdataに格納
@@ -156,28 +112,27 @@ const fetchCharacterStatus = async () => {
           body: JSON.stringify({ characterId: characterId.value }),
         })
 
-        // レスポンスがOKではない場合エラーを投げる
+        // レスポンスがOKではない場合、エラーを投げる
         if (!response.ok) {
-          // JSON形式で届いたエラー
-          const errorData = await response.json()
+          const errorData = await response.json() // JSON形式で届いたエラー
           throw new Error(
             // バックエンドから受け取ったメッセージ　もしくは　データ取得に失敗しちゃった！
             errorData.error || `データ取得に失敗しちゃった！${response.status}`,
           )
         }
+        // レスポンスがOKだった場合、responseをJSON形式で返す。
         return response.json()
       })(),
-      // カウントダウンタイマーを実行する
-      startCountDown(10),
+      startCountDown(10), // カウントダウンタイマーを実行
     ])
 
     console.log('データ取得できたよ！', data)
 
-    // 取得した現在値データを、構文Object.keys(obj)でオブジェクトの中身を繰り返し処理定数に反映
-    Object.keys(currentStatus.value).forEach((key) => {
-      // keyを、interfaceで定義した<CharacterStatus>で型定義
-      const k = key as keyof CharacterStatus
-      currentStatus.value[k] = data[k]
+    // 取得した現在値データを、構文Object.keys(obj)でオブジェクトの中身を繰り返し処理、現在のステータス値定数に反映
+    currentStatuses.value.forEach((item) => {
+      if (item.id in data) {
+        item.value = Number(data[item.id as keyof typeof data])
+      }
     })
     message.value = 'ステータス反映しました。'
     isPush.value = false
@@ -188,62 +143,58 @@ const fetchCharacterStatus = async () => {
       // サーバーに接続できなかった場合
       message.value = 'サーバーに接続できませんでした。管理者に問い合わせてください。'
     } else {
+      // サーバー到達後に何かしらエラーがあった場合
       message.value =
         error.message || '※ステータス取得できませんでした。キャラクターIDを確認してください。'
     }
   } finally {
-    // ロード画面終了
-    isLoading.value = false
-    showCountdownTimer.value = false
-    isPush.value = false
+    isLoading.value = false // ロード画面終了
+    showCountdownTimer.value = false // タイマー画面削除
+    isPush.value = false // 反映ボタン有効化
   }
 }
 
+// 「目標金額を計算する」ボタンクリック時
 const calcStatus = () => {
   // カプセルなしで、目標値×50000
-  Object.keys(uncpStatus.value).forEach((key) => {
-    const k = key as keyof CharacterStatus
+  uncpStatuses.value.forEach((item, index) => {
     // Null合体演算子(??)：目標値がnullや空文字の場合0を返す。
-    uncpStatus.value[k] = (targetStatus.value[k] ?? 0) * 50000
+    item.value = (targetStatuses.value[index].value ?? 0) * 50000
   })
 
   // カプセルなしの合計値
-  uncpSum.value = Object.keys(uncpStatus.value).reduce((sum, key) => {
-    const k = key as keyof CharacterStatus
-    return sum + (uncpStatus.value[k] ?? 0)
+  uncpSum.value = uncpStatuses.value.reduce((sum, item) => {
+    return sum + (item.value ?? 0)
   }, 0)
 
-  newUncpSum.value = uncpSum.value.toLocaleString('ja-JP')
+  newUncpSum.value = uncpSum.value.toLocaleString('ja-JP') // カプセルなしの合計値を3桁区切りに更新
 
   // カプセル込みで、目標値×50000
-  Object.keys(cpStatus.value).forEach((key) => {
-    const k = key as keyof CharacterStatus
-    const currentK = currentStatus.value[k] ?? 0
-    const targetK = targetStatus.value[k] ?? 0
-    const formula = ((Math.floor(currentK / 10) - 1) * 10) / 2
-    // Null合体演算子(??)：目標値がnullや空文字の場合0を返す。
-    if (currentK < 10) {
-      // ステータス値が10より低い場合、計算がマイナスになるため、目標値×50000
-      cpStatus.value[k] = targetK * 50000
-    } else if (targetK < formula || targetStatus.value[k] === 0) {
+  cpStatuses.value.forEach((item, index) => {
+    const currentIndex = currentStatuses.value[index].value ?? 0 // 現在値の各ステータス
+    const targetIndex = targetStatuses.value[index].value ?? 0 // 目標値の各ステータス
+    const formula = ((Math.floor(currentIndex / 10) - 1) * 10) / 2 // 計算式の定数
+    if (currentIndex < 10) {
+      // ステータス値が10より低い場合、計算がマイナスになるため、現在値を無視。目標値×50000
+      item.value = targetIndex * 50000
+    } else if (targetIndex < formula || targetStatuses.value[index].value === 0) {
       // 同系統へ変換後のカプセルが目標値より高い、もしくは目標値が0の場合、貯金額0
-      cpStatus.value[k] = 0
+      item.value = 0
     } else {
       // 変換後のカプセルが目標値より低い場合、((目標値)-(カプセル))×50000
-      cpStatus.value[k] = (targetK - formula) * 50000
+      item.value = (targetIndex - formula) * 50000
     }
   })
 
   // カプセル込みの合計値
-  cpSum.value = Object.keys(cpStatus.value).reduce((sum, key) => {
-    const k = key as keyof CharacterStatus
-    return sum + (cpStatus.value[k] ?? 0)
+  cpSum.value = cpStatuses.value.reduce((sum, item) => {
+    return sum + (item.value ?? 0)
   }, 0)
 
-  newCpSum.value = cpSum.value.toLocaleString('ja-JP')
+  newCpSum.value = cpSum.value.toLocaleString('ja-JP') // カプセル込みの合計値を3桁区切りに変換
 }
 
-// ResetButton
+// リセットボタンクリック時、画面更新
 const resetButton = () => {
   window.location.reload()
 }
@@ -275,37 +226,9 @@ const resetButton = () => {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <th scope="row" class="b2">力</th>
-              <td>{{ currentStatus.power }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">知能</th>
-              <td>{{ currentStatus.intelligence }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">信仰心</th>
-              <td>{{ currentStatus.faith }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">生命力</th>
-              <td>{{ currentStatus.vitality }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">器用さ</th>
-              <td>{{ currentStatus.dexterity }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">速さ</th>
-              <td>{{ currentStatus.speed }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">魅力</th>
-              <td>{{ currentStatus.charm }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">運</th>
-              <td>{{ currentStatus.luck }}</td>
+            <tr v-for="currentItem in currentStatuses" :key="currentItem.id">
+              <th scope="row" class="b2">{{ currentItem.name }}</th>
+              <td>{{ currentItem.value }}</td>
             </tr>
           </tbody>
         </table>
@@ -320,88 +243,11 @@ const resetButton = () => {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <th scope="row" class="b2">力</th>
+            <tr v-for="targetItem in targetStatuses" :key="targetItem.id">
+              <th scope="row" class="b2">{{ targetItem.name }}</th>
               <td>
                 <input
-                  v-model="targetStatus.power"
-                  class="b3"
-                  type="text"
-                  placeholder="2.目標値を入力"
-                />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">知能</th>
-              <td>
-                <input
-                  v-model="targetStatus.intelligence"
-                  class="b3"
-                  type="text"
-                  placeholder="2.目標値を入力"
-                />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">信仰心</th>
-              <td>
-                <input
-                  v-model="targetStatus.faith"
-                  class="b3"
-                  type="text"
-                  placeholder="2.目標値を入力"
-                />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">生命力</th>
-              <td>
-                <input
-                  v-model="targetStatus.vitality"
-                  class="b3"
-                  type="text"
-                  placeholder="2.目標値を入力"
-                />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">器用さ</th>
-              <td>
-                <input
-                  v-model="targetStatus.dexterity"
-                  class="b3"
-                  type="text"
-                  placeholder="2.目標値を入力"
-                />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">速さ</th>
-              <td>
-                <input
-                  v-model="targetStatus.speed"
-                  class="b3"
-                  type="text"
-                  placeholder="2.目標値を入力"
-                />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">魅力</th>
-              <td>
-                <input
-                  v-model="targetStatus.charm"
-                  class="b3"
-                  type="text"
-                  placeholder="2.目標値を入力"
-                />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">運</th>
-              <td>
-                <input
-                  v-model="targetStatus.luck"
+                  v-model="targetItem.value"
                   class="b3"
                   type="text"
                   placeholder="2.目標値を入力"
@@ -429,45 +275,10 @@ const resetButton = () => {
               <th scope="col" class="b2"><b>カプセルなし</b></th>
               <th scope="col" class="b2"><b>カプセル込み</b></th>
             </tr>
-            <tr>
-              <th scope="row" class="b2">力</th>
-              <td class="b3">{{ uncpStatus.power }}</td>
-              <td>{{ cpStatus.power }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">知能</th>
-              <td class="b3">{{ uncpStatus.intelligence }}</td>
-              <td class="b3">{{ cpStatus.intelligence }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">信仰心</th>
-              <td class="b3">{{ uncpStatus.faith }}</td>
-              <td class="b3">{{ cpStatus.faith }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">生命力</th>
-              <td class="b3">{{ uncpStatus.vitality }}</td>
-              <td class="b3">{{ cpStatus.vitality }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">器用さ</th>
-              <td class="b3">{{ uncpStatus.dexterity }}</td>
-              <td class="b3">{{ cpStatus.dexterity }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">速さ</th>
-              <td class="b3">{{ uncpStatus.speed }}</td>
-              <td class="b3">{{ cpStatus.speed }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">魅力</th>
-              <td class="b3">{{ uncpStatus.charm }}</td>
-              <td class="b3">{{ cpStatus.charm }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="b2">運</th>
-              <td class="b3">{{ uncpStatus.luck }}</td>
-              <td class="b3">{{ cpStatus.luck }}</td>
+            <tr v-for="(uncpItem, index) in uncpStatuses" :key="uncpItem.id">
+              <th scope="row" class="b2">{{ uncpItem.name }}</th>
+              <td class="b3">{{ uncpItem.value }}</td>
+              <td>{{ cpStatuses[index].value }}</td>
             </tr>
           </tbody>
           <tfoot>
@@ -485,7 +296,7 @@ const resetButton = () => {
     <!-- how to use -->
     <div id="howto" class="right">
       <h2>
-        転職金額計算スクリプト <span style="font-weight: lighter; font-size: 15px">v2.0.2</span>
+        転職金額計算スクリプト <span style="font-weight: lighter; font-size: 15px">v2.1.0</span>
       </h2>
       <p>
         無料WEBゲームサイト<a
