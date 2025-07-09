@@ -4,6 +4,7 @@ import { ref } from 'vue'
 // キャラクターIDの定数
 const characterId = ref('')
 
+// 各ステータスの型定義
 interface CharacterStatus {
   power: number | null
   intelligence: number | null
@@ -15,53 +16,31 @@ interface CharacterStatus {
   luck: number | null
 }
 
+// 各ステータス値オブジェクト
+const createCharacterStatusRef = () => {
+  return ref<CharacterStatus>({
+    power: null,
+    intelligence: null,
+    faith: null,
+    vitality: null,
+    dexterity: null,
+    speed: null,
+    charm: null,
+    luck: null,
+  })
+}
+
 // 現在の各ステータス値
-const currentStatus = ref<CharacterStatus>({
-  power: null,
-  intelligence: null,
-  faith: null,
-  vitality: null,
-  dexterity: null,
-  speed: null,
-  charm: null,
-  luck: null,
-})
+const currentStatus = createCharacterStatusRef()
 
 // 目標の各ステータス値
-const targetStatus = ref<CharacterStatus>({
-  power: null,
-  intelligence: null,
-  faith: null,
-  vitality: null,
-  dexterity: null,
-  speed: null,
-  charm: null,
-  luck: null,
-})
+const targetStatus = createCharacterStatusRef()
 
 // カプセルなしの各ステータス値
-const uncpStatus = ref<CharacterStatus>({
-  power: null,
-  intelligence: null,
-  faith: null,
-  vitality: null,
-  dexterity: null,
-  speed: null,
-  charm: null,
-  luck: null,
-})
+const uncpStatus = createCharacterStatusRef()
 
 // カプセル込みの各ステータス値
-const cpStatus = ref<CharacterStatus>({
-  power: null,
-  intelligence: null,
-  faith: null,
-  vitality: null,
-  dexterity: null,
-  speed: null,
-  charm: null,
-  luck: null,
-})
+const cpStatus = createCharacterStatusRef()
 
 // 各合計金額の定数
 let uncpSum = ref<number | null>(null)
