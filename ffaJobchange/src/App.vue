@@ -30,47 +30,31 @@ const createCharacterStatusRef = () => {
   })
 }
 
-// 現在の各ステータス値
-const currentStatus = createCharacterStatusRef()
+const currentStatus = createCharacterStatusRef() // 現在の各ステータス値
+const targetStatus = createCharacterStatusRef() // 目標の各ステータス値
+const uncpStatus = createCharacterStatusRef() // カプセルなしの各ステータス値
+const cpStatus = createCharacterStatusRef() // カプセル込みの各ステータス値
 
-// 目標の各ステータス値
-const targetStatus = createCharacterStatusRef()
+let uncpSum = ref<number | null>(null) // カプセルなしの合計値
+const newUncpSum = ref<string>('') // toLocaleString
+let cpSum = ref<number | null>(null) // カプセル込みの合計値
+const newCpSum = ref<string>('') // toLocaleString
 
-// カプセルなしの各ステータス値
-const uncpStatus = createCharacterStatusRef()
+const message = ref('') // ユーザー向けメッセージの定数
 
-// カプセル込みの各ステータス値
-const cpStatus = createCharacterStatusRef()
+const isLoading = ref(false) // ロードの表示・非表示
+const isPush = ref(false) // 反映ボタンの有効化
 
-// 各合計金額の定数
-let uncpSum = ref<number | null>(null)
-let cpSum = ref<number | null>(null)
-// toLocaleString('ja-JP')使用のためstring型として定義
-const newUncpSum = ref<string>('')
-const newCpSum = ref<string>('')
-
-// ユーザー向けメッセージの定数
-const message = ref('')
-// ロードの表示・非表示
-const isLoading = ref(false)
-// カウントダウンタイマーの表示・非表示
-const showCountdownTimer = ref(false)
-// 反映ボタンの有効化
-const isPush = ref(false)
-
-// 10秒のカウントダウン計算用定数
-const count = ref<number>(0)
-// カウントダウンタイマー(setInterval)の変数
-let timer: ReturnType<typeof setInterval> | null = null
+const count = ref<number>(0) // 10秒のカウントダウン計算用定数
+let timer: ReturnType<typeof setInterval> | null = null // カウントダウンタイマー(setInterval)の変数
+const showCountdownTimer = ref(false) // カウントダウンタイマーの表示・非表示
 
 // カウントが0になったらonFinish(ステータス反映)を実行する
 const startCountDown = (sec: number) => {
   return new Promise<void>((onFinish) => {
-    // 前回のタイマーを止める処理
-    clearInterval(timer!)
+    clearInterval(timer!) // 前回のタイマーを止める処理
+    count.value = sec // countに10秒を代入
 
-    // countに10秒を代入
-    count.value = sec
     // setInterval:一定時間ごとに処理を実行する
     timer = setInterval(() => {
       if (count.value > 1) {
@@ -82,43 +66,41 @@ const startCountDown = (sec: number) => {
           count.value = 90
           message.value = 'サーバーがスリープ中かも...反映まで、たぶん'
         }
-        // countが0になったらonFinish
-        onFinish()
+        onFinish() // countが0になったらonFinish
       }
-
-      // 1000m/秒(1秒)毎にカウントダウン
-    }, 1000)
+    }, 1000) // 1000m/秒(1秒)毎にカウントダウン
   })
 }
 
 // 「反映」ボタンクリック時
 const fetchCharacterStatus = async () => {
-  // messageをクリア
-  message.value = ''
-  isPush.value = true
+  message.value = '' // messageをクリア
+  isPush.value = true // 反映ボタン無効化
 
+  // バリデーション
   if (characterId.value === '') {
     // ID未入力時
     message.value = 'キャラクターIDを入力してください。'
     isPush.value = false
     return
   } else if (/^.*[^ -~｡-ﾟ].*$/.test(characterId.value)) {
+    // ユーザーの入力値に全角が含まれていた場合
     message.value = 'キャラクターIDは半角英数字で入力してください。'
     isPush.value = false
     return
   } else if (!/^[a-zA-Z0-9]{4,8}$/.test(characterId.value)) {
+    // 半角英数字以外の文字列　かつ　4〜8文字でない場合
     message.value = 'キャラクターIDは半角英数字4〜8文字で入力してください。'
     isPush.value = false
     return
   }
+
   // ID入力時、読み込み開始
   message.value = '反映まで、たぶん'
-  // ローディング画面・カウントダウンタイマー表示
-  isLoading.value = true
-  showCountdownTimer.value = true
+  isLoading.value = true // ローディング画面表示
+  showCountdownTimer.value = true // カウントダウンタイマー表示
 
-  // PaaSにデプロイしたAPIエンドポイント
-  const backendApiUrl = 'https://ffajobchange-puppeteer.onrender.com/api/get-status'
+  const backendApiUrl = 'https://ffajobchange-puppeteer.onrender.com/api/get-status' // PaaSにデプロイしたAPIエンドポイント
 
   try {
     // Promise.all内の処理がすべて完了したらdataに格納
@@ -135,27 +117,25 @@ const fetchCharacterStatus = async () => {
           body: JSON.stringify({ characterId: characterId.value }),
         })
 
-        // レスポンスがOKではない場合エラーを投げる
+        // レスポンスがOKではない場合、エラーを投げる
         if (!response.ok) {
-          // JSON形式で届いたエラー
-          const errorData = await response.json()
+          const errorData = await response.json() // JSON形式で届いたエラー
           throw new Error(
             // バックエンドから受け取ったメッセージ　もしくは　データ取得に失敗しちゃった！
             errorData.error || `データ取得に失敗しちゃった！${response.status}`,
           )
         }
+        // レスポンスがOKだった場合、responseをJSON形式で返す。
         return response.json()
       })(),
-      // カウントダウンタイマーを実行する
-      startCountDown(10),
+      startCountDown(10), // カウントダウンタイマーを実行
     ])
 
     console.log('データ取得できたよ！', data)
 
-    // 取得した現在値データを、構文Object.keys(obj)でオブジェクトの中身を繰り返し処理定数に反映
+    // 取得した現在値データを、構文Object.keys(obj)でオブジェクトの中身を繰り返し処理、現在のステータス値定数に反映
     Object.keys(currentStatus.value).forEach((key) => {
-      // keyを、interfaceで定義した<CharacterStatus>で型定義
-      const k = key as keyof CharacterStatus
+      const k = key as keyof CharacterStatus // keyを、interfaceで定義した<CharacterStatus>で型定義
       currentStatus.value[k] = data[k]
     })
     message.value = 'ステータス反映しました。'
@@ -167,17 +147,18 @@ const fetchCharacterStatus = async () => {
       // サーバーに接続できなかった場合
       message.value = 'サーバーに接続できませんでした。管理者に問い合わせてください。'
     } else {
+      // サーバー到達後に何かしらエラーがあった場合
       message.value =
         error.message || '※ステータス取得できませんでした。キャラクターIDを確認してください。'
     }
   } finally {
-    // ロード画面終了
-    isLoading.value = false
-    showCountdownTimer.value = false
-    isPush.value = false
+    isLoading.value = false // ロード画面終了
+    showCountdownTimer.value = false // タイマー画面削除
+    isPush.value = false // 反映ボタン有効化
   }
 }
 
+// 「目標金額を計算する」ボタンクリック時
 const calcStatus = () => {
   // カプセルなしで、目標値×50000
   Object.keys(uncpStatus.value).forEach((key) => {
@@ -192,17 +173,16 @@ const calcStatus = () => {
     return sum + (uncpStatus.value[k] ?? 0)
   }, 0)
 
-  newUncpSum.value = uncpSum.value.toLocaleString('ja-JP')
+  newUncpSum.value = uncpSum.value.toLocaleString('ja-JP') // カプセルなしの合計値を3桁区切りに更新
 
   // カプセル込みで、目標値×50000
   Object.keys(cpStatus.value).forEach((key) => {
     const k = key as keyof CharacterStatus
-    const currentK = currentStatus.value[k] ?? 0
-    const targetK = targetStatus.value[k] ?? 0
-    const formula = ((Math.floor(currentK / 10) - 1) * 10) / 2
-    // Null合体演算子(??)：目標値がnullや空文字の場合0を返す。
+    const currentK = currentStatus.value[k] ?? 0 // 現在値の各ステータス
+    const targetK = targetStatus.value[k] ?? 0 // 目標値の各ステータス
+    const formula = ((Math.floor(currentK / 10) - 1) * 10) / 2 // 計算式の定数
     if (currentK < 10) {
-      // ステータス値が10より低い場合、計算がマイナスになるため、目標値×50000
+      // ステータス値が10より低い場合、計算がマイナスになるため、現在値を無視。目標値×50000
       cpStatus.value[k] = targetK * 50000
     } else if (targetK < formula || targetStatus.value[k] === 0) {
       // 同系統へ変換後のカプセルが目標値より高い、もしくは目標値が0の場合、貯金額0
@@ -219,10 +199,10 @@ const calcStatus = () => {
     return sum + (cpStatus.value[k] ?? 0)
   }, 0)
 
-  newCpSum.value = cpSum.value.toLocaleString('ja-JP')
+  newCpSum.value = cpSum.value.toLocaleString('ja-JP') // カプセル込みの合計値を3桁区切りに変換
 }
 
-// ResetButton
+// リセットボタンクリック時、画面更新
 const resetButton = () => {
   window.location.reload()
 }
