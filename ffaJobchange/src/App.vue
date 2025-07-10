@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { fetchCharacterData } from './utils/apiFetch'
 
 // キャラクターIDの定数
 const characterId = ref('')
@@ -95,34 +96,10 @@ const fetchCharacterStatus = async () => {
   isLoading.value = true // ローディング画面表示
   showCountdownTimer.value = true // カウントダウンタイマー表示
 
-  const backendApiUrl = 'https://ffajobchange-puppeteer.onrender.com/api/get-status' // PaaSにデプロイしたAPIエンドポイント
-
   try {
     // Promise.all内の処理がすべて完了したらdataに格納
     const [data] = await Promise.all([
-      (async () => {
-        const response = await fetch(backendApiUrl, {
-          // POSTリクエスト送信
-          method: 'POST',
-          // リクエストヘッダー：JSON形式を指定
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          // characterIDをJSON形式で送信
-          body: JSON.stringify({ characterId: characterId.value }),
-        })
-
-        // レスポンスがOKではない場合、エラーを投げる
-        if (!response.ok) {
-          const errorData = await response.json() // JSON形式で届いたエラー
-          throw new Error(
-            // バックエンドから受け取ったメッセージ　もしくは　データ取得に失敗しちゃった！
-            errorData.error || `データ取得に失敗しちゃった！${response.status}`,
-          )
-        }
-        // レスポンスがOKだった場合、responseをJSON形式で返す。
-        return response.json()
-      })(),
+      fetchCharacterData(characterId.value),
       startCountDown(10), // カウントダウンタイマーを実行
     ])
 
