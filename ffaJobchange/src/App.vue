@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { fetchCharacterData } from './utils/apiFetch'
+import { fetchCharacterData } from './utils/apiFetch' // api取得ユーティリティ関数
+import { useCountdown } from './composables/useCountdown' // countdown
 
 // キャラクターIDの定数
 const characterId = ref('')
@@ -41,32 +42,7 @@ const message = ref('') // ユーザー向けメッセージの定数
 const isLoading = ref(false) // ロードの表示・非表示
 const isPush = ref(false) // 反映ボタンの有効化
 
-const count = ref<number>(0) // 10秒のカウントダウン計算用定数
-let timer: ReturnType<typeof setInterval> | null = null // カウントダウンタイマー(setInterval)の変数
-const showCountdownTimer = ref(false) // カウントダウンタイマーの表示・非表示
-
-// カウントが0になったらonFinish(ステータス反映)を実行する
-const startCountDown = (sec: number) => {
-  return new Promise<void>((onFinish) => {
-    clearInterval(timer!) // 前回のタイマーを止める処理
-    count.value = sec // countに10秒を代入
-
-    // setInterval:一定時間ごとに処理を実行する
-    timer = setInterval(() => {
-      if (count.value > 1) {
-        // countが1以上だったらカウントダウン
-        count.value--
-      } else {
-        if (count.value === 1 && message.value === '反映まで、たぶん') {
-          // 10秒経っても反映されない場合は90秒のカウントダウン開始
-          count.value = 90
-          message.value = 'サーバーがスリープ中かも...反映まで、たぶん'
-        }
-        onFinish() // countが0になったらonFinish
-      }
-    }, 1000) // 1000m/秒(1秒)毎にカウントダウン
-  })
-}
+const { count, showCountdownTimer, startCountdown } = useCountdown()
 
 // 「反映」ボタンクリック時
 const fetchCharacterStatus = async () => {
@@ -92,15 +68,14 @@ const fetchCharacterStatus = async () => {
   }
 
   // ID入力時、読み込み開始
-  message.value = '反映まで、たぶん'
   isLoading.value = true // ローディング画面表示
   showCountdownTimer.value = true // カウントダウンタイマー表示
 
   try {
     // Promise.all内の処理がすべて完了したらdataに格納
     const [data] = await Promise.all([
-      fetchCharacterData(characterId.value),
-      startCountDown(10), // カウントダウンタイマーを実行
+      fetchCharacterData(characterId.value), // api取得実行。引数にcharacterIdを渡す
+      startCountdown(10, message), // カウントダウンタイマーを実行。引数に10カウントとmessage refを渡す
     ])
 
     console.log('データ取得できたよ！', data)
