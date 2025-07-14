@@ -26,10 +26,12 @@ const createCharacterStatusRef = () => {
   ])
 }
 
-const currentStatuses = createCharacterStatusRef() // 現在の各ステータス値
-const targetStatuses = createCharacterStatusRef() // 目標の各ステータス値
-const uncpStatuses = createCharacterStatusRef() // カプセルなしの各ステータス値
-const cpStatuses = createCharacterStatusRef() // カプセル込みの各ステータス値
+const characterData = ref({
+  currentStatuses: createCharacterStatusRef(), // 現在の各ステータス値
+  targetStatuses: createCharacterStatusRef(), // 目標の各ステータス値
+  uncpStatuses: createCharacterStatusRef(), // カプセルなしの各ステータス値
+  cpStatuses: createCharacterStatusRef(), // カプセル込みの各ステータス値
+})
 
 // <CalcButton>のemit受取
 const newUncpSum = ref<string>('')
@@ -53,26 +55,20 @@ const resetButton = () => {
   <div class="flex">
     <div class="left">
       <!-- キャラクターID入力、反映ボタン -->
-      <CharacterId :currentStatuses="currentStatuses" />
+      <CharacterId :currentStatuses="characterData.currentStatuses" />
 
       <div class="status">
         <!-- キャラクターステータスの現在値 -->
-        <CurrentStatus :currentStatuses="currentStatuses" />
+        <CurrentStatus :currentStatuses="characterData.currentStatuses" />
 
         <p>⇒</p>
 
         <!-- キャラクターステータスの目標値 -->
-        <TargetStatus :targetStatuses="targetStatuses" />
+        <TargetStatus :targetStatuses="characterData.targetStatuses" />
       </div>
 
       <!-- 転職金額計算ボタン -->
-      <CalcButton
-        :currentStatuses="currentStatuses"
-        :targetStatuses="targetStatuses"
-        :uncpStatuses="uncpStatuses"
-        :cpStatuses="cpStatuses"
-        @newSum="handleNewSum"
-      />
+      <CalcButton :data="characterData" @newSum="handleNewSum" />
 
       <div class="flex">
         <!-- 転職金額 -->
@@ -88,10 +84,10 @@ const resetButton = () => {
               <th scope="col" class="b2"><b>カプセルなし</b></th>
               <th scope="col" class="b2"><b>カプセル込み</b></th>
             </tr>
-            <tr v-for="(uncpItem, index) in uncpStatuses" :key="uncpItem.id">
+            <tr v-for="(uncpItem, index) in characterData.uncpStatuses" :key="uncpItem.id">
               <th scope="row" class="b2">{{ uncpItem.name }}</th>
               <td class="b3">{{ uncpItem.value }}</td>
-              <td>{{ cpStatuses[index].value }}</td>
+              <td>{{ characterData.cpStatuses[index].value }}</td>
             </tr>
           </tbody>
           <tfoot>
