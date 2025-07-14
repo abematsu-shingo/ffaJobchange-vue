@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import CharacterId from './components/CharacterId.vue'
 import CurrentStatus from './components/CurrentStatus.vue'
 import TargetStatus from './components/TargetStatus.vue'
+import CalcButton from './components/CalcButton.vue'
 
 // 各ステータスの型定義
 interface CharacterStatus {
@@ -30,49 +31,12 @@ const targetStatuses = createCharacterStatusRef() // 目標の各ステータス
 const uncpStatuses = createCharacterStatusRef() // カプセルなしの各ステータス値
 const cpStatuses = createCharacterStatusRef() // カプセル込みの各ステータス値
 
-let uncpSum = ref<number | null>(null) // カプセルなしの合計値
-const newUncpSum = ref<string>('') // toLocaleString
-let cpSum = ref<number | null>(null) // カプセル込みの合計値
-const newCpSum = ref<string>('') // toLocaleString
-
-// 「目標金額を計算する」ボタンクリック時
-const calcStatus = () => {
-  // カプセルなしで、目標値×50000
-  uncpStatuses.value.forEach((item, index) => {
-    // Null合体演算子(??)：目標値がnullや空文字の場合0を返す。
-    item.value = (targetStatuses.value[index].value ?? 0) * 50000
-  })
-
-  // カプセルなしの合計値
-  uncpSum.value = uncpStatuses.value.reduce((sum, item) => {
-    return sum + (item.value ?? 0)
-  }, 0)
-
-  newUncpSum.value = uncpSum.value.toLocaleString('ja-JP') // カプセルなしの合計値を3桁区切りに更新
-
-  // カプセル込みで、目標値×50000
-  cpStatuses.value.forEach((item, index) => {
-    const currentIndex = currentStatuses.value[index].value ?? 0 // 現在値の各ステータス
-    const targetIndex = targetStatuses.value[index].value ?? 0 // 目標値の各ステータス
-    const formula = ((Math.floor(currentIndex / 10) - 1) * 10) / 2 // 計算式の定数
-    if (currentIndex < 10) {
-      // ステータス値が10より低い場合、計算がマイナスになるため、現在値を無視。目標値×50000
-      item.value = targetIndex * 50000
-    } else if (targetIndex < formula || targetStatuses.value[index].value === 0) {
-      // 同系統へ変換後のカプセルが目標値より高い、もしくは目標値が0の場合、貯金額0
-      item.value = 0
-    } else {
-      // 変換後のカプセルが目標値より低い場合、((目標値)-(カプセル))×50000
-      item.value = (targetIndex - formula) * 50000
-    }
-  })
-
-  // カプセル込みの合計値
-  cpSum.value = cpStatuses.value.reduce((sum, item) => {
-    return sum + (item.value ?? 0)
-  }, 0)
-
-  newCpSum.value = cpSum.value.toLocaleString('ja-JP') // カプセル込みの合計値を3桁区切りに変換
+// <CalcButton>のemit受取
+const newUncpSum = ref<string>('')
+const newCpSum = ref<string>('')
+const handleNewSum = (uncpSumValue: string, newCpSumValue: string) => {
+  newUncpSum.value = uncpSumValue
+  newCpSum.value = newCpSumValue
 }
 
 // リセットボタンクリック時、画面更新
@@ -102,7 +66,13 @@ const resetButton = () => {
       </div>
 
       <!-- 転職金額計算ボタン -->
-      <button @click="calcStatus">目標金額を計算する</button>
+      <CalcButton
+        :currentStatuses="currentStatuses"
+        :targetStatuses="targetStatuses"
+        :uncpStatuses="uncpStatuses"
+        :cpStatuses="cpStatuses"
+        @newSum="handleNewSum"
+      />
 
       <div class="flex">
         <!-- 転職金額 -->
