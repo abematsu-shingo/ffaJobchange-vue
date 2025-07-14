@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import CharacterId from './components/CharacterId.vue'
+import CurrentStatus from './components/CurrentStatus.vue'
 
 // 各ステータスの型定義
 interface CharacterStatus {
@@ -90,19 +91,7 @@ const resetButton = () => {
 
       <div class="status">
         <!-- キャラクターステータスの現在値 -->
-        <table>
-          <thead>
-            <tr>
-              <th scope="col" class="b1" colspan="2">現在値</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="currentItem in currentStatuses" :key="currentItem.id">
-              <th scope="row" class="b2">{{ currentItem.name }}</th>
-              <td>{{ currentItem.value }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <CurrentStatus :currentStatuses="currentStatuses" />
 
         <p>⇒</p>
 
@@ -234,7 +223,7 @@ const resetButton = () => {
   </div>
 </template>
 
-<style scoped>
+<style>
 nav {
   display: none;
 }
