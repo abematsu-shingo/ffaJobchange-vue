@@ -310,6 +310,7 @@ li {
   width: 55vw;
   justify-content: space-between;
   align-items: center;
+  margin-top: 10px;
 }
 .flex {
   display: flex;
