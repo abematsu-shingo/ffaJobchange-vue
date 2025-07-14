@@ -4,6 +4,7 @@ import CharacterId from './components/CharacterId.vue'
 import CurrentStatus from './components/CurrentStatus.vue'
 import TargetStatus from './components/TargetStatus.vue'
 import CalcButton from './components/CalcButton.vue'
+import CalcStatus from './components/calcStatus.vue'
 
 // 各ステータスの型定義
 interface CharacterStatus {
@@ -34,11 +35,13 @@ const characterData = ref({
 })
 
 // <CalcButton>のemit受取
-const newUncpSum = ref<string>('')
-const newCpSum = ref<string>('')
+const sumStatus = {
+  newUncpSum: ref<string>(''),
+  newCpSum: ref<string>(''),
+}
 const handleNewSum = (uncpSumValue: string, newCpSumValue: string) => {
-  newUncpSum.value = uncpSumValue
-  newCpSum.value = newCpSumValue
+  sumStatus.newUncpSum.value = uncpSumValue
+  sumStatus.newCpSum.value = newCpSumValue
 }
 
 // リセットボタンクリック時、画面更新
@@ -72,32 +75,7 @@ const resetButton = () => {
 
       <div class="flex">
         <!-- 転職金額 -->
-        <table class="last-table">
-          <thead>
-            <tr>
-              <th scope="col" class="b1" colspan="3">転職金額</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th scope="col" class="b2"><b>ステ名</b></th>
-              <th scope="col" class="b2"><b>カプセルなし</b></th>
-              <th scope="col" class="b2"><b>カプセル込み</b></th>
-            </tr>
-            <tr v-for="(uncpItem, index) in characterData.uncpStatuses" :key="uncpItem.id">
-              <th scope="row" class="b2">{{ uncpItem.name }}</th>
-              <td class="b3">{{ uncpItem.value }}</td>
-              <td>{{ characterData.cpStatuses[index].value }}</td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr>
-              <th class="b4">合計</th>
-              <td class="b3 bold">{{ newUncpSum }}</td>
-              <td class="b3 bold">{{ newCpSum }}</td>
-            </tr>
-          </tfoot>
-        </table>
+        <CalcStatus :data="characterData" :sumData="sumStatus" />
       </div>
       <button @click="resetButton" class="reset">リセットする</button>
     </div>
