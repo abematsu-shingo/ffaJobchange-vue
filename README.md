@@ -41,8 +41,8 @@ Vue.js で構築されており、[バックエンド API](https://github.com/ab
 ### インストール
 
 ```bash
-git clone [あなたのフロントエンドリポジトリのURL]
-cd [リポジトリ名]
+git clone git@github.com:abematsu-shingo/ffaJobchange-vue.git
+cd ffaJobchange-vue
 npm install
 ```
 
