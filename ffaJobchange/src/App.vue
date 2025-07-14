@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import CharacterId from './components/CharacterId.vue'
 import CurrentStatus from './components/CurrentStatus.vue'
+import TargetStatus from './components/TargetStatus.vue'
 
 // 各ステータスの型定義
 interface CharacterStatus {
@@ -87,6 +88,7 @@ const resetButton = () => {
   </nav>
   <div class="flex">
     <div class="left">
+      <!-- キャラクターID入力、反映ボタン -->
       <CharacterId :currentStatuses="currentStatuses" />
 
       <div class="status">
@@ -96,26 +98,7 @@ const resetButton = () => {
         <p>⇒</p>
 
         <!-- キャラクターステータスの目標値 -->
-        <table>
-          <thead>
-            <tr>
-              <th scope="col" class="b1" colspan="2">目標値</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="targetItem in targetStatuses" :key="targetItem.id">
-              <th scope="row" class="b2">{{ targetItem.name }}</th>
-              <td>
-                <input
-                  v-model="targetItem.value"
-                  class="b3"
-                  type="text"
-                  placeholder="2.目標値を入力"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <TargetStatus :targetStatuses="targetStatuses" />
       </div>
 
       <!-- 転職金額計算ボタン -->
