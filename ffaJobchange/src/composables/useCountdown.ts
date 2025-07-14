@@ -16,14 +16,14 @@ export const useCountdown = () => {
 
       // setInterval:一定時間ごとに処理を実行する
       timer = setInterval(() => {
-        if (count.value > 5) {
+        if (count.value > 1) {
           // countが1以上だったらカウントダウン
           count.value--
         } else {
-          if (count.value === 5 && messageRef.value === '反映まで、たぶん') {
+          if (count.value === 1 && messageRef.value === '反映まで、たぶん') {
             // 10秒経っても反映されない場合は90秒のカウントダウン開始
             count.value = 90
-            messageRef.value = 'サーバーがスリープ中かも...反映まで、たぶん'
+            messageRef.value = 'サーバーがスリープ中かも...もう少し待ってね'
           }
           onFinish() // countが0になったらonFinish
         }
