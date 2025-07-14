@@ -69,5 +69,6 @@ const calcStatus = () => {
 }
 </script>
 <template>
+  <!-- 転職金額計算ボタン -->
   <button @click="calcStatus">目標金額を計算する</button>
 </template>
